@@ -1,5 +1,105 @@
 # Changelog - M5Stack CoreS3 FFT Acoustic Analyzer
 
+## Version 2.1.0 - Complete M5Unified Integration
+
+### 🚀 Major Changes
+
+#### Microphone Library Migration
+- **เปลี่ยนจาก**: `driver/i2s.h` → `M5.Mic class` (M5Unified)
+- **เหตุผล**: ง่ายต่อการใช้งาน, auto pin configuration, รองรับหลายรุ่น M5Stack
+
+#### Simplified Configuration
+- ❌ ลบ: การตั้งค่า I2S pins manual
+- ✅ ใช้: M5.Mic.config() และ M5.Mic.begin()
+- ✅ ใช้: M5.Mic.record() แทน i2s_read()
+
+### 🎯 Benefits
+
+#### Ease of Use
+- **Auto Pin Detection**: M5Unified จัดการ pins อัตโนมัติตาม M5Stack model
+- **Simplified API**: ใช้ M5.Mic.record() เพียงบรรทัดเดียว
+- **Error Handling**: Built-in error checking ใน M5.Mic class
+
+#### Better Compatibility
+- ✅ **M5Stack CoreS3**: Full support
+- ✅ **M5Stack Core2**: Auto pin mapping
+- ✅ **M5Stack Fire**: Auto pin mapping  
+- ✅ **M5Stack Basic**: Auto pin mapping (อาจต้องปรับบางค่า)
+
+#### Reduced Code Complexity
+- **I2S Setup**: ลดจาก ~30 บรรทัด เหลือ ~8 บรรทัด
+- **Audio Capture**: ลดจาก ~10 บรรทัด เหลือ ~5 บรรทัด
+- **No Pin Configuration**: ไม่ต้องกำหนด I2S pins เลย
+
+### 📝 Code Changes Summary
+
+#### Before (Version 2.0):
+```cpp
+#include <driver/i2s.h>
+#define I2S_WS 14
+#define I2S_SCK 13
+#define I2S_SD 12
+
+i2s_config_t i2s_config = { /* ... */ };
+i2s_pin_config_t pin_config = { /* ... */ };
+i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
+i2s_set_pin(I2S_PORT, &pin_config);
+i2s_read(I2S_PORT, raw_samples, /* ... */);
+```
+
+#### After (Version 2.1):
+```cpp
+// No I2S includes needed!
+auto mic_cfg = M5.Mic.config();
+mic_cfg.sample_rate = SAMPLING_FREQUENCY;
+M5.Mic.config(mic_cfg);
+M5.Mic.begin();
+M5.Mic.record(raw_samples, SAMPLES, portMAX_DELAY);
+```
+
+### 🛠️ Updated Files
+
+1. **M5Stack_FFT_SPL_Analyzer.ino**
+   - ลบ `#include <driver/i2s.h>`
+   - เปลี่ยน `setupI2S()` → `setupMicrophone()`
+   - ใช้ `M5.Mic.record()` แทน `i2s_read()`
+
+2. **Mic_FFT.ino**
+   - ลบ I2S pin definitions
+   - ใช้ M5.Mic class
+   - โค้ดสั้นลง ~25%
+
+3. **config.h**
+   - ลบ I2S pin configurations
+   - เพิ่ม `MIC_OVER_SAMPLING` setting
+   - เปลี่ยน `I2S_DMA_*` → `MIC_DMA_*`
+
+4. **platformio.ini**
+   - ลบ ESP-DSP dependency (ใช้ built-in)
+   - เหลือแค่ M5Unified library
+
+### 🔧 Migration Guide v2.0 → v2.1
+
+#### สำหรับผู้ใช้ Version 2.0:
+
+1. **อัปเดตโค้ด**:
+   - ไม่ต้องเปลี่ยนอะไรเลย! โค้ดใหม่ backward compatible
+   - แค่ download ไฟล์ใหม่และอัปโหลด
+
+2. **อัปเดต platformio.ini**:
+   ```ini
+   lib_deps = 
+       m5stack/M5Unified@^0.1.16
+   # ลบ ESP-DSP repository URL ออก
+   ```
+
+3. **ไม่ต้องเปลี่ยน**:
+   - การใช้งานปุ่ม (เหมือนเดิม)
+   - การแสดงผล (เหมือนเดิม)
+   - การตั้งค่าส่วนใหญ่ใน config.h
+
+---
+
 ## Version 2.0.0 - Major Library Migration
 
 ### 🚀 Major Changes

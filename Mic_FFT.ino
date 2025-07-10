@@ -6,18 +6,11 @@
  */
 
 #include <M5Unified.h>
-#include <driver/i2s.h>
 #include <esp_dsp.h>
 
 // Basic configuration
 #define SAMPLES 1024
 #define SAMPLING_RATE 16000  // Lower rate for better performance
-#define I2S_PORT I2S_NUM_0
-
-// I2S pins for M5Stack CoreS3
-#define I2S_WS 14
-#define I2S_SCK 13
-#define I2S_SD 12
 
 // FFT variables
 float *fft_input;
@@ -42,7 +35,7 @@ void setup() {
   // Initialize FFT
   initFFT();
   
-  // Initialize I2S microphone
+  // Initialize M5 microphone
   initMicrophone();
   
   Serial.println("Setup complete");
@@ -65,29 +58,26 @@ void initFFT() {
 }
 
 void initMicrophone() {
-  i2s_config_t i2s_config = {
-    .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
-    .sample_rate = SAMPLING_RATE,
-    .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-    .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
-    .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-    .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-    .dma_buf_count = 4,
-    .dma_buf_len = 512,
-    .use_apll = false
-  };
+  // Configure M5 microphone with simple settings
+  auto mic_cfg = M5.Mic.config();
+  mic_cfg.sample_rate = SAMPLING_RATE;
+  mic_cfg.over_sampling = 1;  // Simple oversampling
+  mic_cfg.dma_buf_count = 4;
+  mic_cfg.dma_buf_len = 512;
   
-  i2s_pin_config_t pin_config = {
-    .bck_io_num = I2S_SCK,
-    .ws_io_num = I2S_WS,
-    .data_out_num = I2S_PIN_NO_CHANGE,
-    .data_in_num = I2S_SD
-  };
+  // Initialize M5 microphone
+  if (!M5.Mic.config(mic_cfg)) {
+    Serial.println("Error configuring M5 microphone!");
+    return;
+  }
   
-  i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
-  i2s_set_pin(I2S_PORT, &pin_config);
+  if (!M5.Mic.begin()) {
+    Serial.println("Error starting M5 microphone!");
+    return;
+  }
   
-  Serial.println("Microphone initialized");
+  Serial.println("M5 microphone initialized");
+  Serial.printf("Actual sample rate: %d Hz\n", M5.Mic.getSampleRate());
 }
 
 void loop() {
@@ -109,12 +99,16 @@ void loop() {
 }
 
 void captureAudio() {
-  size_t bytes_read;
-  i2s_read(I2S_PORT, raw_samples, SAMPLES * sizeof(int16_t), &bytes_read, portMAX_DELAY);
-  
-  // Convert to float and normalize
-  for (int i = 0; i < SAMPLES; i++) {
-    fft_input[i] = (float)raw_samples[i] / 32768.0f;
+  // Record audio using M5 microphone
+  if (M5.Mic.isEnabled()) {
+    size_t samples_read = M5.Mic.record(raw_samples, SAMPLES, portMAX_DELAY);
+    
+    if (samples_read > 0) {
+      // Convert to float and normalize
+      for (int i = 0; i < SAMPLES; i++) {
+        fft_input[i] = (float)raw_samples[i] / 32768.0f;
+      }
+    }
   }
 }
 

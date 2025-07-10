@@ -1,17 +1,10 @@
 #include <M5Unified.h>
-#include <driver/i2s.h>
 #include <esp_dsp.h>
 #include "config.h"
 
 // Use configuration values
 #define SAMPLES FFT_SAMPLES
 #define SAMPLING_FREQUENCY SAMPLING_FREQ
-
-// I2S Configuration for internal microphone
-#define I2S_WS I2S_WS_PIN
-#define I2S_SCK I2S_SCK_PIN
-#define I2S_SD I2S_SD_PIN
-#define I2S_PORT I2S_PORT_NUM
 
 // Display and UI
 #define TFT_WIDTH 320
@@ -58,8 +51,8 @@ void setup() {
     // Initialize FFT buffers
     initializeFFT();
     
-    // Initialize I2S for microphone
-    setupI2S();
+    // Initialize M5 microphone
+    setupMicrophone();
     
     // Display initial UI
     drawUI();
@@ -91,41 +84,27 @@ void initializeFFT() {
     Serial.println("FFT initialized successfully");
 }
 
-void setupI2S() {
-    i2s_config_t i2s_config = {
-        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
-        .sample_rate = SAMPLING_FREQUENCY,
-        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-        .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
-        .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-        .dma_buf_count = I2S_DMA_BUF_COUNT,
-        .dma_buf_len = I2S_DMA_BUF_LEN,
-        .use_apll = false,
-        .tx_desc_auto_clear = false,
-        .fixed_mclk = 0
-    };
+void setupMicrophone() {
+    // Configure M5 microphone
+    auto mic_cfg = M5.Mic.config();
+    mic_cfg.sample_rate = SAMPLING_FREQUENCY;
+    mic_cfg.over_sampling = MIC_OVER_SAMPLING;  // Oversampling from config
+    mic_cfg.dma_buf_count = MIC_DMA_BUF_COUNT;
+    mic_cfg.dma_buf_len = MIC_DMA_BUF_LEN;
     
-    i2s_pin_config_t pin_config = {
-        .bck_io_num = I2S_SCK,
-        .ws_io_num = I2S_WS,
-        .data_out_num = I2S_PIN_NO_CHANGE,
-        .data_in_num = I2S_SD
-    };
-    
-    esp_err_t result = i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
-    if (result != ESP_OK) {
-        Serial.printf("Error installing I2S driver: %d\n", result);
+    // Initialize M5 microphone
+    if (!M5.Mic.config(mic_cfg)) {
+        Serial.println("Error configuring M5 microphone!");
         return;
     }
     
-    result = i2s_set_pin(I2S_PORT, &pin_config);
-    if (result != ESP_OK) {
-        Serial.printf("Error setting I2S pins: %d\n", result);
+    if (!M5.Mic.begin()) {
+        Serial.println("Error starting M5 microphone!");
         return;
     }
     
-    Serial.println("I2S microphone initialized successfully");
+    Serial.println("M5 microphone initialized successfully");
+    Serial.printf("Sample rate: %d Hz\n", M5.Mic.getSampleRate());
 }
 
 void loop() {
@@ -150,17 +129,22 @@ void loop() {
 }
 
 void captureAudio() {
-    size_t bytes_read = 0;
-    
-    // Read samples from I2S
-    esp_err_t result = i2s_read(I2S_PORT, raw_samples, SAMPLES * sizeof(int16_t), &bytes_read, portMAX_DELAY);
-    
-    if (result == ESP_OK && bytes_read > 0) {
-        // Convert to float and apply window function
-        for (int i = 0; i < SAMPLES; i++) {
-            fft_input[i] = (float)raw_samples[i] * wind[i] / 32768.0f; // Normalize and apply window
-            fft_output[i] = 0.0f; // Initialize imaginary part
+    // Record audio using M5 microphone
+    if (M5.Mic.isEnabled()) {
+        // Record samples
+        size_t samples_read = M5.Mic.record(raw_samples, SAMPLES, portMAX_DELAY);
+        
+        if (samples_read > 0) {
+            // Convert to float and apply window function
+            for (int i = 0; i < SAMPLES; i++) {
+                fft_input[i] = (float)raw_samples[i] * wind[i] / 32768.0f; // Normalize and apply window
+                fft_output[i] = 0.0f; // Initialize imaginary part
+            }
+        } else {
+            Serial.println("No audio samples captured");
         }
+    } else {
+        Serial.println("Microphone not enabled");
     }
 }
 

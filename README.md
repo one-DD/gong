@@ -18,9 +18,8 @@
 1. **M5Stack CoreS3** - บอร์ดพัฒนา
 2. **Arduino IDE** หรือ **PlatformIO**
 3. **ไลบรารี่ที่จำเป็น**:
-   - M5Unified Library
-   - ESP-DSP Library (ในตัว ESP32)
-   - ESP32 I2S Driver
+   - M5Unified Library (รวม M5.Mic class)
+   - ESP-DSP Library (ในตัว ESP32 Arduino Core)
 
 ### การติดตั้งไลบรารี่
 
@@ -35,7 +34,7 @@ Tools > Manage Libraries > ค้นหาและติดตั้ง:
 ```ini
 lib_deps = 
     m5stack/M5Unified@^0.1.16
-    https://github.com/espressif/esp-dsp.git
+หมายเหตุ: ESP-DSP รวมอยู่ใน ESP32 Arduino Core แล้ว
 ```
 
 ### การอัปโหลดโค้ด
@@ -96,12 +95,13 @@ const double MICROPHONE_SENSITIVITY = -42.0; // dBFS
 
 ## ข้อมูลทางเทคนิค (Technical Details)
 
-### การกำหนดค่า I2S
+### การกำหนดค่า M5.Mic
 
-- **Sampling Rate**: 44.1 kHz
+- **Sampling Rate**: 44.1 kHz (ปรับได้ตาม config)
 - **Bit Depth**: 16-bit (เพื่อประสิทธิภาพที่ดีขึ้น)
-- **Channel**: Mono (ช่องซ้าย)
+- **Oversampling**: 2x (ปรับได้ 1x, 2x, 4x, 8x)
 - **DMA Buffer**: 4 buffers × 1024 samples
+- **Auto Pin Configuration**: M5Unified จัดการ pins อัตโนมัติ
 
 ### FFT Processing
 
@@ -157,15 +157,16 @@ SPL = dBFS - MIC_SENSITIVITY + 94 dB
 
 ## English Summary
 
-This project implements a real-time FFT acoustic analyzer and SPL meter for the M5Stack CoreS3 using M5Unified and ESP-DSP. It features:
+This project implements a real-time FFT acoustic analyzer and SPL meter for the M5Stack CoreS3 using M5Unified's M5.Mic class and ESP-DSP. It features:
 
 - Real-time FFT spectrum analysis (1024-point) using optimized ESP-DSP
 - Sound Pressure Level measurement (30-120 dB range)
 - Dual display modes with color-coded visualization
 - Peak hold functionality with configurable timeout
-- I2S microphone interface with 16-bit sampling
+- Simplified M5.Mic interface with auto pin configuration
 - Interactive controls via built-in buttons
 - Memory-efficient dynamic allocation
 - Enhanced performance (~40% faster than ArduinoFFT)
+- Cross-compatibility with multiple M5Stack models
 
 Perfect for acoustic analysis, noise monitoring, and audio engineering applications.

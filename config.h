@@ -58,18 +58,16 @@
                                    // Red above warning
 
 // ====================
-// I2S CONFIGURATION
+// MICROPHONE CONFIGURATION (M5.Mic)
 // ====================
 
-// I2S pins for M5Stack CoreS3
-#define I2S_WS_PIN 14
-#define I2S_SCK_PIN 13  
-#define I2S_SD_PIN 12
-#define I2S_PORT_NUM I2S_NUM_0
+// M5 Microphone DMA buffer configuration
+#define MIC_DMA_BUF_COUNT 4
+#define MIC_DMA_BUF_LEN 1024
 
-// I2S DMA buffer configuration
-#define I2S_DMA_BUF_COUNT 4
-#define I2S_DMA_BUF_LEN 1024
+// Microphone oversampling (1, 2, 4, 8)
+// Higher values = better quality but more CPU usage
+#define MIC_OVER_SAMPLING 2
 
 // ====================
 // CALIBRATION SETTINGS

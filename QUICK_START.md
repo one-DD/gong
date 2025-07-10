@@ -13,8 +13,8 @@
 1. เปิด Arduino IDE
 2. ไปที่ `Tools > Manage Libraries`
 3. ค้นหาและติดตั้ง:
-   - `M5Unified` by M5Stack
-   - หมายเหตุ: ESP-DSP มีในตัว ESP32 แล้ว
+   - `M5Unified` by M5Stack (รวม M5.Mic class)
+   - หมายเหตุ: ESP-DSP รวมอยู่ใน ESP32 Arduino Core แล้ว
 
 #### สำหรับ PlatformIO:
 1. เปิด PlatformIO
