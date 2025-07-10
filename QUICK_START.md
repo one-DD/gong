@@ -13,8 +13,8 @@
 1. เปิด Arduino IDE
 2. ไปที่ `Tools > Manage Libraries`
 3. ค้นหาและติดตั้ง:
-   - `M5CoreS3` by M5Stack
-   - `ArduinoFFT` by Enrique Condes
+   - `M5Unified` by M5Stack
+   - หมายเหตุ: ESP-DSP มีในตัว ESP32 แล้ว
 
 #### สำหรับ PlatformIO:
 1. เปิด PlatformIO
@@ -24,7 +24,9 @@
 ### ขั้นตอนที่ 3: อัปโหลดโค้ด
 1. เชื่อมต่อ M5Stack CoreS3 กับคอมพิวเตอร์
 2. เลือกพอร์ตที่ถูกต้อง
-3. อัปโหลดไฟล์ `M5Stack_FFT_SPL_Analyzer.ino`
+3. เลือกไฟล์ที่ต้องการ:
+   - `M5Stack_FFT_SPL_Analyzer.ino` - เวอร์ชันเต็ม (แนะนำ)
+   - `Mic_FFT.ino` - เวอร์ชันง่าย (สำหรับผู้เริ่มต้น)
 
 ### ขั้นตอนที่ 4: ทดสอบการทำงาน
 1. รีสตาร์ท M5Stack CoreS3
@@ -77,10 +79,27 @@
 1. เพิ่มค่า `DISPLAY_UPDATE_INTERVAL` ใน config.h
 2. ลดค่า `SAMPLING_FREQ` 
 
+## เลือกเวอร์ชันที่เหมาะสม
+
+### 🚀 M5Stack_FFT_SPL_Analyzer.ino (เวอร์ชันเต็ม)
+**เหมาะสำหรับ**: การใช้งานจริง, การวิเคราะห์เสียงขั้นสูง
+- ✅ FFT Spectrum Analyzer
+- ✅ SPL Meter พร้อม Peak Hold
+- ✅ สลับโมดการแสดงผล
+- ✅ การตั้งค่าผ่าน config.h
+- ✅ ฟีเจอร์ครบครัน
+
+### 🎯 Mic_FFT.ino (เวอร์ชันง่าย)
+**เหมาะสำหรับ**: ผู้เริ่มต้น, การเรียนรู้ FFT
+- ✅ FFT Spectrum เท่านั้น
+- ✅ แสดง Peak Frequency
+- ✅ โค้ดเข้าใจง่าย
+- ✅ ใช้หน่วยความจำน้อย
+
 ## การขยายความสามารถ
 
 ### เพิ่มการบันทึกข้อมูล:
-แก้ไขใน config.h:
+แก้ไขใน config.h (เวอร์ชันเต็ม):
 ```cpp
 #define ENABLE_SERIAL_LOGGING true
 #define DEBUG_MODE true

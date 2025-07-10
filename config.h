@@ -31,9 +31,9 @@
 // Lower values: 22050, 16000, 8000 for less CPU usage
 #define SAMPLING_FREQ 44100
 
-// Window function for FFT
-// Options: FFT_WIN_TYP_HAMMING, FFT_WIN_TYP_HANN, FFT_WIN_TYP_BLACKMAN
-#define FFT_WINDOW_TYPE FFT_WIN_TYP_HAMMING
+// Window function for FFT (using ESP-DSP now)
+// Options: Hann window is built-in to the code
+#define FFT_WINDOW_TYPE 1  // 1 = Hann window, 0 = No window
 
 // ====================
 // DISPLAY CONFIGURATION
@@ -45,7 +45,7 @@
 // Spectrum analyzer settings
 #define SPECTRUM_HEIGHT 100
 #define SPECTRUM_Y_POSITION 120
-#define SPECTRUM_BARS 64  // Number of frequency bars to display
+#define SPECTRUM_BARS 64  // Number of frequency bars to display (max 128)
 
 // SPL meter range
 #define SPL_MIN_DB 30
