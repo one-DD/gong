@@ -155,6 +155,11 @@ SPL = dBFS - MIC_SENSITIVITY + 94 dB
 
 ---
 
+## IP101GRI Ethernet PHY (ESP32-P4 Nano)
+
+For the Waveshare ESP32-P4 Nano board, see `IP101GRI_LIBRARY.md` for notes
+on using the built-in ESP-IDF Ethernet driver with the IP101GRI PHY.
+
 ## English Summary
 
 This project implements a real-time FFT acoustic analyzer and SPL meter for the M5Stack CoreS3 using M5Unified's M5.Mic class and ESP-DSP. It features:
