@@ -14,6 +14,15 @@
 #include <WiFi.h>
 #include <WebServer.h>
 
+// -------- Compatibility for older Arduino-ESP32 cores --------
+#if !defined(ARDUINO_EVENT_ETH_START) && defined(SYSTEM_EVENT_ETH_START)
+#define ARDUINO_EVENT_ETH_START SYSTEM_EVENT_ETH_START
+#define ARDUINO_EVENT_ETH_CONNECTED SYSTEM_EVENT_ETH_CONNECTED
+#define ARDUINO_EVENT_ETH_GOT_IP SYSTEM_EVENT_ETH_GOT_IP
+#define ARDUINO_EVENT_ETH_DISCONNECTED SYSTEM_EVENT_ETH_DISCONNECTED
+#define ARDUINO_EVENT_ETH_STOP SYSTEM_EVENT_ETH_STOP
+#endif
+
 // -------- IP101 Ethernet PHY configuration --------
 // Update these values based on your ESP32-P4 Nano wiring.
 #ifndef ETH_PHY_ADDR
@@ -29,7 +38,24 @@
 #define ETH_PHY_MDIO 18
 #endif
 #ifndef ETH_CLK_MODE
+#if defined(ETH_CLOCK_GPIO0_IN)
 #define ETH_CLK_MODE ETH_CLOCK_GPIO0_IN
+#elif defined(ETH_CLOCK_GPIO17_OUT)
+#define ETH_CLK_MODE ETH_CLOCK_GPIO17_OUT
+#elif defined(ETH_CLOCK_GPIO0_OUT)
+#define ETH_CLK_MODE ETH_CLOCK_GPIO0_OUT
+#else
+#define ETH_CLK_MODE 0
+#endif
+#endif
+#ifndef ETH_PHY_TYPE
+#if defined(ETH_PHY_IP101)
+#define ETH_PHY_TYPE ETH_PHY_IP101
+#elif defined(ETH_PHY_LAN8720)
+#define ETH_PHY_TYPE ETH_PHY_LAN8720
+#else
+#define ETH_PHY_TYPE 0
+#endif
 #endif
 
 // -------- Web server --------
@@ -207,7 +233,7 @@ void setup() {
 
   Serial.println("Starting Ethernet (IP101)...");
   bool ethStarted = ETH.begin(ETH_PHY_ADDR, ETH_PHY_POWER, ETH_PHY_MDC, ETH_PHY_MDIO,
-                              ETH_PHY_IP101, ETH_CLK_MODE);
+                              ETH_PHY_TYPE, ETH_CLK_MODE);
   if (!ethStarted) {
     Serial.println("ETH begin failed. Check PHY wiring and configuration.");
   }
