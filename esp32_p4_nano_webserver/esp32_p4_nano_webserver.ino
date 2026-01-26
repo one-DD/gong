@@ -5,22 +5,80 @@
   - Shows basic system info and a demo toggle
 
   NOTE:
-  - Replace WIFI_SSID and WIFI_PASS with your network
+  - Uses IP101 Ethernet PHY (internal board)
+  - Adjust ETH_* pins if your board wiring differs
   - Works with Arduino-ESP32 core (ESP32 family)
 */
 
+#include <ETH.h>
 #include <WiFi.h>
 #include <WebServer.h>
 
-// -------- WiFi credentials (edit these) --------
-static const char *WIFI_SSID = "YOUR_WIFI_SSID";
-static const char *WIFI_PASS = "YOUR_WIFI_PASSWORD";
+// -------- IP101 Ethernet PHY configuration --------
+// Update these values based on your ESP32-P4 Nano wiring.
+#ifndef ETH_PHY_ADDR
+#define ETH_PHY_ADDR 1
+#endif
+#ifndef ETH_PHY_POWER
+#define ETH_PHY_POWER -1
+#endif
+#ifndef ETH_PHY_MDC
+#define ETH_PHY_MDC 23
+#endif
+#ifndef ETH_PHY_MDIO
+#define ETH_PHY_MDIO 18
+#endif
+#ifndef ETH_CLK_MODE
+#define ETH_CLK_MODE ETH_CLOCK_GPIO0_IN
+#endif
 
 // -------- Web server --------
 WebServer server(80);
 
 // Demo state
 static bool demoToggle = false;
+static bool ethConnected = false;
+
+void WiFiEvent(WiFiEvent_t event) {
+  switch (event) {
+    case ARDUINO_EVENT_ETH_START:
+      Serial.println("ETH Started");
+      ETH.setHostname("esp32-p4-nano");
+      break;
+    case ARDUINO_EVENT_ETH_CONNECTED:
+      Serial.println("ETH Connected");
+      break;
+    case ARDUINO_EVENT_ETH_GOT_IP:
+      Serial.print("ETH MAC: ");
+      Serial.println(ETH.macAddress());
+      Serial.print("IPv4: ");
+      Serial.println(ETH.localIP());
+      ethConnected = true;
+      break;
+    case ARDUINO_EVENT_ETH_DISCONNECTED:
+      Serial.println("ETH Disconnected");
+      ethConnected = false;
+      break;
+    case ARDUINO_EVENT_ETH_STOP:
+      Serial.println("ETH Stopped");
+      ethConnected = false;
+      break;
+    default:
+      break;
+  }
+}
+
+String ethernetStatus() {
+  return ethConnected ? "Connected" : "Disconnected";
+}
+
+String ethernetIP() {
+  return ethConnected ? ETH.localIP().toString() : String("N/A");
+}
+
+String ethernetMac() {
+  return ethConnected ? ETH.macAddress() : String("N/A");
+}
 
 // HTML layout helper
 String htmlHeader(const String &title) {
@@ -71,9 +129,9 @@ void handleRoot() {
   s += "<p class=\"muted\">This is a simple multi-page web UI running on ESP32-P4.</p>";
   s += "<a class=\"btn\" href=\"/info\">View device info</a></div>";
   s += "<div class=\"card\"><h2>Status</h2>";
-  s += "<p>WiFi: <strong>Connected</strong></p>";
-  s += "<p>IP: <strong>" + WiFi.localIP().toString() + "</strong></p>";
-  s += "<p>Signal: <strong>" + String(WiFi.RSSI()) + " dBm</strong></p>";
+  s += "<p>Ethernet: <strong>" + ethernetStatus() + "</strong></p>";
+  s += "<p>IP: <strong>" + ethernetIP() + "</strong></p>";
+  s += "<p>MAC: <strong>" + ethernetMac() + "</strong></p>";
   s += "</div>";
   s += "<div class=\"card\"><h2>Quick Action</h2>";
   s += "<p class=\"muted\">Toggle demo state from the control page.</p>";
@@ -97,9 +155,9 @@ void handleInfo() {
   s += "<p>Flash size: <strong>" + String(ESP.getFlashChipSize()) + " bytes</strong></p>";
   s += "</div>";
   s += "<div class=\"card\"><h2>Network</h2>";
-  s += "<p>SSID: <strong>" + String(WiFi.SSID()) + "</strong></p>";
-  s += "<p>MAC: <strong>" + WiFi.macAddress() + "</strong></p>";
-  s += "<p>IP: <strong>" + WiFi.localIP().toString() + "</strong></p>";
+  s += "<p>Status: <strong>" + ethernetStatus() + "</strong></p>";
+  s += "<p>MAC: <strong>" + ethernetMac() + "</strong></p>";
+  s += "<p>IP: <strong>" + ethernetIP() + "</strong></p>";
   s += "</div>";
   s += "</div>";
   s += htmlFooter();
@@ -145,17 +203,26 @@ void setup() {
   Serial.begin(115200);
   delay(200);
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  WiFi.onEvent(WiFiEvent);
 
-  Serial.print("Connecting to WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(400);
-    Serial.print(".");
+  Serial.println("Starting Ethernet (IP101)...");
+  bool ethStarted = ETH.begin(ETH_PHY_ADDR, ETH_PHY_POWER, ETH_PHY_MDC, ETH_PHY_MDIO,
+                              ETH_PHY_IP101, ETH_CLK_MODE);
+  if (!ethStarted) {
+    Serial.println("ETH begin failed. Check PHY wiring and configuration.");
   }
-  Serial.println();
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
+
+  const unsigned long waitStart = millis();
+  while (!ethConnected && (millis() - waitStart) < 15000) {
+    delay(100);
+  }
+
+  if (ethConnected) {
+    Serial.print("IP address: ");
+    Serial.println(ETH.localIP());
+  } else {
+    Serial.println("No IP address yet.");
+  }
 
   server.on("/", handleRoot);
   server.on("/info", handleInfo);
